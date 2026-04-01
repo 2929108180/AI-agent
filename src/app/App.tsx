@@ -11,12 +11,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./components/ui/dropdown-menu";
+import type { SlideCard } from "./types";
 
 type Step = 1 | 2 | 3;
 
 export default function App() {
   const [hasStarted, setHasStarted] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>(1);
+  const [outline, setOutline] = useState<SlideCard[]>([]);
 
   if (!hasStarted) {
     return <LandingPage onStart={() => setHasStarted(true)} />;
@@ -27,6 +29,11 @@ export default function App() {
     { id: 2, name: "智能大纲架构", icon: <LayoutDashboard size={18} /> },
     { id: 3, name: "高保真生成与微调", icon: <MonitorPlay size={18} /> },
   ];
+
+  const handleSetupComplete = (slides: SlideCard[]) => {
+    setOutline(slides);
+    setCurrentStep(2);
+  };
 
   const handleNext = () => {
     if (currentStep < 3) setCurrentStep((prev) => (prev + 1) as Step);
@@ -45,7 +52,7 @@ export default function App() {
       <header className={`flex items-center justify-between px-6 py-4 shrink-0 border-b backdrop-blur-md transition-colors duration-300 ${
         isEditor ? 'bg-[#161616]/90 border-white/5' : 'bg-white/80 border-neutral-200/80'
       }`}>
-        <button 
+        <button
           onClick={() => {
             setHasStarted(false);
             setCurrentStep(1);
@@ -94,8 +101,8 @@ export default function App() {
                 {index < steps.length - 1 && (
                   <div
                     className={`w-8 h-[2px] rounded-full transition-colors ${
-                      isCompleted 
-                        ? (isEditor ? "bg-white/20" : "bg-neutral-300") 
+                      isCompleted
+                        ? (isEditor ? "bg-white/20" : "bg-neutral-300")
                         : (isEditor ? "bg-neutral-800" : "bg-neutral-200")
                     }`}
                   />
@@ -130,13 +137,13 @@ export default function App() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-[#1A1A1A] border-neutral-800 text-white rounded-xl shadow-2xl p-1">
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => window.dispatchEvent(new CustomEvent('start-presentation', { detail: { fromCurrent: false } }))}
                     className="hover:bg-white/10 cursor-pointer rounded-lg text-sm"
                   >
                     <MonitorPlay size={14} className="mr-2 text-neutral-400" /> 从第一页放映
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => window.dispatchEvent(new CustomEvent('start-presentation', { detail: { fromCurrent: true } }))}
                     className="hover:bg-white/10 cursor-pointer rounded-lg text-sm"
                   >
@@ -166,8 +173,8 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 overflow-hidden relative">
         <div className="absolute inset-0 overflow-y-auto">
-          {currentStep === 1 && <SetupPanel onComplete={handleNext} />}
-          {currentStep === 2 && <StickyOutlinePanel />}
+          {currentStep === 1 && <SetupPanel onComplete={handleSetupComplete} />}
+          {currentStep === 2 && <StickyOutlinePanel initialOutline={outline} onOutlineChange={setOutline} />}
           {currentStep === 3 && <WorkspaceEditor />}
         </div>
       </main>

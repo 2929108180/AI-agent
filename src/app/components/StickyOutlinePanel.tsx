@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Copy, RefreshCw, PenSquare, LayoutGrid, Plus, Sparkles, AlignLeft, Bot, Loader2 } from "lucide-react";
 import {
@@ -8,74 +8,40 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
+import type { SlideCard } from "../types";
 
-// Mock JSON Outline Data
-const MOCK_OUTLINE = [
-  {
-    id: "slide-1",
-    title: "封面：AI与未来设计",
-    type: "cover",
-    content: ["主标题：人工智能驱动的设计革命", "副标题：从效率工具到协同创作者", "演讲人：资深设计师"],
-    visual: "极简暗黑风，中央放置发光AI芯片图形",
-    color: "bg-amber-100",
-  },
-  {
-    id: "slide-2",
-    title: "目录：议程概览",
-    type: "agenda",
-    content: ["1. 背景：设计工具演进史", "2. 现状：生成式AI的突破", "3. 实践：AI设计工作流", "4. 展望：未来的人机共创"],
-    visual: "左侧大号数字标题，右侧四宫格导航排版",
-    color: "bg-blue-100",
-  },
-  {
-    id: "slide-3",
-    title: "痛点分析：传统设计的瓶颈",
-    type: "content",
-    content: ["效率低下：大量重复性修改与沟通成本", "灵感枯竭：面对新需求缺乏创意切入点", "规范约束：难以快速统一大规模资产"],
-    visual: "三个带图标的悬浮卡片（便当盒），形成阶梯状排列",
-    color: "bg-green-100",
-  },
-  {
-    id: "slide-4",
-    title: "核心方案：AI自动化生成工作流",
-    type: "content",
-    content: ["需求解析 (NLP) -> 结构生成 (LLM) -> 视觉排版 (Layout Gen) -> 资产输出 (SVG/Code)"],
-    visual: "清晰的四个节点流程图，附带闪烁的发光连接线",
-    color: "bg-purple-100",
-  },
-  {
-    id: "slide-5",
-    title: "案例展示：智能PPT生成工具",
-    type: "showcase",
-    content: ["从纯文本到可交互的高保真PPT只需要10秒钟。", "核心技术：Bento Grid 排版算法 + SVG 智能组装"],
-    visual: "左图右文结构，左侧展示应用界面，右侧强调两个核心数据指标",
-    color: "bg-rose-100",
-  },
-  {
-    id: "slide-6",
-    title: "结尾：拥抱变化，而非被替代",
-    type: "ending",
-    content: ["AI 不会替代设计师，只会替代不用 AI 的设计师。", "让我们共同开启下一代设计之旅。"],
-    visual: "全屏背景图配合大号居中引用文案，增加品牌Logo",
-    color: "bg-indigo-100",
-  },
-];
+interface StickyOutlinePanelProps {
+  initialOutline: SlideCard[];
+  onOutlineChange?: (slides: SlideCard[]) => void;
+}
 
-export function StickyOutlinePanel() {
-  const [outline, setOutline] = useState(MOCK_OUTLINE);
+export function StickyOutlinePanel({ initialOutline, onOutlineChange }: StickyOutlinePanelProps) {
+  const [outline, setOutline] = useState<SlideCard[]>(initialOutline);
   const [isJsonView, setIsJsonView] = useState(false);
 
   // AI Add Page State
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [inputText, setInputText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [previewSlide, setPreviewSlide] = useState<any>(null);
+  const [previewSlide, setPreviewSlide] = useState<SlideCard | null>(null);
+
+  // 同步上游
+  useEffect(() => {
+    onOutlineChange?.(outline);
+  }, [outline]);
+
+  // 更新 initialOutline 变化时同步
+  useEffect(() => {
+    if (initialOutline.length > 0) {
+      setOutline(initialOutline);
+    }
+  }, [initialOutline]);
 
   const handleGenerate = () => {
     if (!inputText.trim()) return;
     setIsGenerating(true);
     setPreviewSlide(null);
-    
+
     // Mock AI intelligent layout parsing
     setTimeout(() => {
       setPreviewSlide({
@@ -167,7 +133,7 @@ export function StickyOutlinePanel() {
 
               <div className="flex justify-between items-start mb-4 border-b border-black/10 pb-2">
                 <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider bg-white/40 px-2 py-1 rounded">
-                  Slide {index + 1} • {slide.type}
+                  Slide {index + 1} · {slide.type}
                 </span>
                 <button className="opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-black transition-opacity">
                   <PenSquare size={16} />
@@ -194,7 +160,7 @@ export function StickyOutlinePanel() {
               </div>
             </motion.div>
           ))}
-          
+
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <motion.div
@@ -225,7 +191,7 @@ export function StickyOutlinePanel() {
                   </DialogDescription>
                 </div>
               </div>
-              
+
               {/* Body */}
               <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-neutral-50/50">
                 {/* Left Input */}
@@ -241,7 +207,7 @@ export function StickyOutlinePanel() {
                     className="flex-1 w-full resize-none rounded-xl border border-neutral-200 p-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-shadow text-neutral-700 text-sm leading-relaxed"
                   />
                   <div className="mt-4 flex justify-end">
-                    <button 
+                    <button
                       onClick={handleGenerate}
                       disabled={!inputText.trim() || isGenerating}
                       className={`px-5 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all ${
@@ -278,7 +244,7 @@ export function StickyOutlinePanel() {
                         <p className="text-sm">正在提炼核心内容与层级关系...</p>
                       </div>
                     ) : previewSlide ? (
-                      <div 
+                      <div
                         className={`relative ${previewSlide.color} p-6 rounded-sm shadow-xl w-full max-w-[320px] mx-auto`}
                         style={{
                           boxShadow: "3px 5px 25px rgba(0,0,0,0.1)",
@@ -293,7 +259,7 @@ export function StickyOutlinePanel() {
                         />
                         <div className="flex justify-between items-start mb-4 border-b border-black/10 pb-2">
                           <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider bg-white/40 px-2 py-1 rounded">
-                            NEW • {previewSlide.type}
+                            NEW · {previewSlide.type}
                           </span>
                         </div>
                         <h3 className="font-bold text-lg text-neutral-900 leading-tight mb-3">
@@ -335,7 +301,7 @@ export function StickyOutlinePanel() {
                   onClick={handleAddSlide}
                   disabled={!previewSlide}
                   className={`px-5 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 ${
-                    previewSlide 
+                    previewSlide
                       ? "bg-neutral-900 text-white hover:bg-neutral-800 shadow-sm"
                       : "bg-neutral-200 text-neutral-400 cursor-not-allowed"
                   }`}

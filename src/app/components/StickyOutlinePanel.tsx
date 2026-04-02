@@ -10,13 +10,67 @@ import {
 } from "./ui/dialog";
 import type { SlideCard } from "../types";
 
+// 开发阶段默认大纲（后端未连接时的占位数据）
+const DEFAULT_OUTLINE: SlideCard[] = [
+  {
+    id: "slide-1",
+    title: "封面：AI与未来设计",
+    type: "cover",
+    content: ["主标题：人工智能驱动的设计革命", "副标题：从效率工具到协同创作者", "演讲人：资深设计师"],
+    visual: "极简暗黑风，中央放置发光AI芯片图形",
+    color: "bg-amber-100",
+  },
+  {
+    id: "slide-2",
+    title: "目录：议程概览",
+    type: "agenda",
+    content: ["1. 背景：设计工具演进史", "2. 现状：生成式AI的突破", "3. 实践：AI设计工作流", "4. 展望：未来的人机共创"],
+    visual: "左侧大号数字标题，右侧四宫格导航排版",
+    color: "bg-blue-100",
+  },
+  {
+    id: "slide-3",
+    title: "痛点分析：传统设计的瓶颈",
+    type: "content",
+    content: ["效率低下：大量重复性修改与沟通成本", "灵感枯竭：面对新需求缺乏创意切入点", "规范约束：难以快速统一大规模资产"],
+    visual: "三个带图标的悬浮卡片（便当盒），形成阶梯状排列",
+    color: "bg-green-100",
+  },
+  {
+    id: "slide-4",
+    title: "核心方案：AI自动化生成工作流",
+    type: "content",
+    content: ["需求解析 (NLP) -> 结构生成 (LLM) -> 视觉排版 (Layout Gen) -> 资产输出 (SVG/Code)"],
+    visual: "清晰的四个节点流程图，附带闪烁的发光连接线",
+    color: "bg-purple-100",
+  },
+  {
+    id: "slide-5",
+    title: "案例展示：智能PPT生成工具",
+    type: "showcase",
+    content: ["从纯文本到可交互的高保真PPT只需要10秒钟。", "核心技术：Bento Grid 排版算法 + SVG 智能组装"],
+    visual: "左图右文结构，左侧展示应用界面，右侧强调两个核心数据指标",
+    color: "bg-rose-100",
+  },
+  {
+    id: "slide-6",
+    title: "结尾：拥抱变化，而非被替代",
+    type: "ending",
+    content: ["AI 不会替代设计师，只会替代不用 AI 的设计师。", "让我们共同开启下一代设计之旅。"],
+    visual: "全屏背景图配合大号居中引用文案，增加品牌Logo",
+    color: "bg-indigo-100",
+  },
+];
+
 interface StickyOutlinePanelProps {
   initialOutline: SlideCard[];
   onOutlineChange?: (slides: SlideCard[]) => void;
 }
 
 export function StickyOutlinePanel({ initialOutline, onOutlineChange }: StickyOutlinePanelProps) {
-  const [outline, setOutline] = useState<SlideCard[]>(initialOutline);
+  const [outline, setOutline] = useState<SlideCard[]>(
+    initialOutline.length > 0 ? initialOutline : DEFAULT_OUTLINE
+  );
   const [isJsonView, setIsJsonView] = useState(false);
 
   // AI Add Page State

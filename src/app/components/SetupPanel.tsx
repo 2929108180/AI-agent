@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Sparkles, UploadCloud, X, Wand2, Target, AlignLeft, FileText, ArrowRight,
-  Lightbulb, FileBox, Loader2,
+  Lightbulb, FileBox, Loader2, Undo2, RefreshCw
 } from "lucide-react";
 import {
   Select,
@@ -36,6 +36,8 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
 
   // AI 润色状态
   const [isPolishing, setIsPolishing] = useState(false);
+  const [polishHistory, setPolishHistory] = useState<string[]>([]);
+  const isPolished = polishHistory.length > 0;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -75,6 +77,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
         url = "/api/v1/ingestion/track-b";
         const formData = new FormData();
         formData.append("file", fileInputRef.current.files[0]);
+        if (referenceText.trim()) formData.append("reference_text", referenceText);
         formData.append("audience", audience);
         formData.append("length", length);
         body = formData;
@@ -115,22 +118,38 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
     setStreamedText("");
   };
 
-  const handlePolish = async () => {
-    if (!topic.trim() || isPolishing) return;
+  const handlePolish = async (instruction?: string) => {
+    const textToPolish = hasReference ? referenceText : topic;
+    if (!textToPolish.trim() || isPolishing) return;
     setIsPolishing(true);
+
+    // Save current topic to history for Undo
+    setPolishHistory(prev => [...prev, textToPolish]);
 
     let polished = "";
     try {
-      await fetchSSE("/api/v1/ingestion/polish", { topic, audience }, {
+      const payload = instruction ? { topic: textToPolish, audience, instruction } : { topic: textToPolish, audience };
+      // Sending additional instruction if provided (simulated backend support)
+      await fetchSSE("/api/v1/ingestion/polish", payload, {
         onToken: (content) => {
           polished += content;
-          setTopic(polished);
+          if (hasReference) setReferenceText(polished);
+          else setTopic(polished);
         },
         onDone: () => setIsPolishing(false),
         onError: () => setIsPolishing(false),
       });
     } catch {
       setIsPolishing(false);
+    }
+  };
+
+  const handleUndoPolish = () => {
+    if (polishHistory.length > 0) {
+      const prevTopic = polishHistory[polishHistory.length - 1];
+      if (hasReference) setReferenceText(prevTopic);
+      else setTopic(prevTopic);
+      setPolishHistory(prev => prev.slice(0, -1));
     }
   };
 
@@ -174,7 +193,11 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
             <h3 className="text-base font-semibold text-neutral-800 mb-4">您有现成的参考资料吗？</h3>
             <div className="grid grid-cols-2 gap-4">
               <button
-                onClick={() => !isGenerating && setHasReference(false)}
+                onClick={() => {
+                  if (isGenerating) return;
+                  setHasReference(false);
+                  if (audience === "auto") setAudience("professional");
+                }}
                 className={`relative p-5 rounded-2xl border-2 text-left transition-all overflow-hidden group ${
                   !hasReference
                     ? "border-indigo-500 bg-indigo-50/30 ring-4 ring-indigo-500/10"
@@ -190,7 +213,11 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
               </button>
 
               <button
-                onClick={() => !isGenerating && setHasReference(true)}
+                onClick={() => {
+                  if (isGenerating) return;
+                  setHasReference(true);
+                  setAudience("auto");
+                }}
                 className={`relative p-5 rounded-2xl border-2 text-left transition-all overflow-hidden group ${
                   hasReference
                     ? "border-emerald-500 bg-emerald-50/30 ring-4 ring-emerald-500/10"
@@ -217,7 +244,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
                   transition={{ duration: 0.2 }}
-                  className="flex flex-col h-full absolute inset-0"
+                  className="flex flex-col h-full w-full"
                 >
                   <div className="p-5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
                     <div className="flex items-center gap-2">
@@ -232,18 +259,53 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                     placeholder="例如：我要做一场介绍全新 AI 智能咖啡机的产品发布会。受众是科技极客和咖啡爱好者。核心卖点是：豆种智能识别、微米级研磨、全息温控..."
                     className="flex-1 w-full p-6 text-neutral-700 text-base leading-relaxed outline-none resize-none bg-transparent placeholder-neutral-400 disabled:opacity-50"
                   />
-                  <div className="p-4 bg-neutral-50/50 border-t border-neutral-100 flex justify-end">
-                    <button
-                      onClick={handlePolish}
-                      disabled={!topic.trim() || isPolishing || isGenerating}
-                      className="text-indigo-600 hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5"
-                    >
-                      {isPolishing ? (
-                        <><Loader2 size={16} className="animate-spin" /> 润色中...</>
-                      ) : (
-                        <><Sparkles size={16} /> AI 润色扩写</>
+                  <div className="p-3 bg-neutral-50/50 border-t border-neutral-100 flex items-center justify-between min-h-[60px]">
+                    {/* Undo Button */}
+                    <AnimatePresence>
+                      {isPolished && (
+                        <motion.button 
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: "auto" }}
+                          exit={{ opacity: 0, width: 0 }}
+                          onClick={handleUndoPolish}
+                          disabled={isPolishing || isGenerating}
+                          className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-800 disabled:opacity-50 overflow-hidden px-2 whitespace-nowrap"
+                        >
+                          <Undo2 size={14} /> 撤销
+                        </motion.button>
                       )}
-                    </button>
+                    </AnimatePresence>
+                    
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 ml-auto">
+                       {isPolishing ? (
+                          <div className="px-4 py-2 rounded-xl text-sm font-semibold text-indigo-600 flex items-center gap-2">
+                             <Loader2 size={16} className="animate-spin" /> AI 思考中...
+                          </div>
+                       ) : !isPolished ? (
+                          <button
+                            onClick={() => handlePolish()}
+                            disabled={!topic.trim() || isGenerating}
+                            className="text-indigo-600 bg-white border border-indigo-100 hover:bg-indigo-50 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5"
+                          >
+                            <Sparkles size={16} /> AI 润色扩写
+                          </button>
+                       ) : (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex bg-white shadow-sm border border-neutral-200 rounded-xl p-1 overflow-hidden"
+                          >
+                             <button onClick={() => handlePolish("更详尽")} disabled={isGenerating} className="px-3 py-1.5 text-xs font-medium text-neutral-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1">✨ 更详尽</button>
+                             <button onClick={() => handlePolish("更精简")} disabled={isGenerating} className="px-3 py-1.5 text-xs font-medium text-neutral-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1">🔪 更精简</button>
+                             <button onClick={() => handlePolish("更具煽动性")} disabled={isGenerating} className="px-3 py-1.5 text-xs font-medium text-neutral-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1">🎯 煽动性</button>
+                             <div className="w-px h-4 bg-neutral-200 self-center mx-1"></div>
+                             <button onClick={() => handlePolish()} disabled={isGenerating} className="px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1">
+                               <RefreshCw size={14} /> 换个说法
+                             </button>
+                          </motion.div>
+                       )}
+                    </div>
                   </div>
                 </motion.div>
               ) : (
@@ -253,7 +315,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="flex flex-col h-full absolute inset-0 bg-neutral-50/30"
+                  className="flex flex-col h-full w-full bg-neutral-50/30"
                 >
                   <div className="p-5 border-b border-neutral-100 flex items-center justify-between bg-white">
                     <div className="flex items-center gap-2">
@@ -262,7 +324,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                     </div>
                   </div>
 
-                  <div className="p-6 flex-1 flex flex-col gap-6 overflow-y-auto">
+                  <div className="p-6 flex-1 flex flex-col gap-5">
                     {/* File Upload Section */}
                     <div>
                       {!uploadedFile ? (
@@ -307,19 +369,68 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
 
                     <div className="flex items-center gap-4">
                       <div className="flex-1 h-px bg-neutral-200"></div>
-                      <span className="text-xs font-medium text-neutral-400 uppercase tracking-widest">OR</span>
+                      <span className="text-xs font-medium text-neutral-400 tracking-widest">+ (可选配合补充说明)</span>
                       <div className="flex-1 h-px bg-neutral-200"></div>
                     </div>
 
                     {/* Text Paste Section */}
-                    <div className={`flex-1 flex flex-col rounded-2xl border transition-all ${uploadedFile ? 'opacity-50 pointer-events-none border-neutral-200 bg-neutral-50' : 'border-neutral-200 bg-white focus-within:border-emerald-400 focus-within:ring-1 focus-within:ring-emerald-400 shadow-sm'}`}>
+                    <div className="flex-1 flex flex-col rounded-2xl border border-neutral-200 transition-all bg-white focus-within:border-emerald-400 focus-within:ring-1 focus-within:ring-emerald-400 shadow-sm overflow-hidden">
                       <textarea
                         value={referenceText}
                         onChange={(e) => setReferenceText(e.target.value)}
-                        disabled={!!uploadedFile || isGenerating}
-                        placeholder="直接在此粘贴您的长篇草稿、会议纪要或参考文章..."
-                        className="flex-1 w-full min-h-[140px] p-4 text-sm text-neutral-700 leading-relaxed outline-none resize-none bg-transparent placeholder-neutral-400"
+                        disabled={isGenerating}
+                        placeholder={uploadedFile ? "+ 在此补充附加要求或具体文本说明（可选）..." : "直接在此粘贴您的长篇草稿、会议纪要或参考文章..."}
+                        className="flex-1 w-full min-h-[160px] p-4 text-sm text-neutral-700 leading-relaxed outline-none resize-none bg-transparent placeholder-neutral-400"
                       />
+                      {/* Action Bar for Polish */}
+                      <div className="p-2.5 bg-neutral-50/50 border-t border-neutral-100 flex items-center justify-between min-h-[50px] rounded-b-2xl">
+                        {/* Undo Button */}
+                        <AnimatePresence>
+                          {isPolished && (
+                            <motion.button 
+                              initial={{ opacity: 0, width: 0 }}
+                              animate={{ opacity: 1, width: "auto" }}
+                              exit={{ opacity: 0, width: 0 }}
+                              onClick={handleUndoPolish}
+                              disabled={isPolishing || isGenerating}
+                              className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-800 disabled:opacity-50 overflow-hidden px-2 whitespace-nowrap"
+                            >
+                              <Undo2 size={14} /> 撤销
+                            </motion.button>
+                          )}
+                        </AnimatePresence>
+                        
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2 ml-auto">
+                           {isPolishing ? (
+                              <div className="px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-600 flex items-center gap-2">
+                                 <Loader2 size={14} className="animate-spin" /> AI 思考中...
+                              </div>
+                           ) : !isPolished ? (
+                              <button
+                                onClick={() => handlePolish()}
+                                disabled={!referenceText.trim() || isGenerating}
+                                className="text-emerald-600 bg-white border border-emerald-100 hover:bg-emerald-50 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5"
+                              >
+                                <Sparkles size={14} /> AI 润色扩写
+                              </button>
+                           ) : (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex bg-white shadow-sm border border-neutral-200 rounded-xl p-1 overflow-hidden"
+                              >
+                                 <button onClick={() => handlePolish("更详尽")} disabled={isGenerating} className="px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1">✨ 更详尽</button>
+                                 <button onClick={() => handlePolish("更精简")} disabled={isGenerating} className="px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1">🔪 更精简</button>
+                                 <button onClick={() => handlePolish("更具煽动性")} disabled={isGenerating} className="px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1">🎯 煽动性</button>
+                                 <div className="w-px h-3 bg-neutral-200 self-center mx-1"></div>
+                                 <button onClick={() => handlePolish()} disabled={isGenerating} className="px-2.5 py-1 text-xs font-medium text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1">
+                                   <RefreshCw size={12} /> 换个说法
+                                 </button>
+                              </motion.div>
+                           )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -345,6 +456,11 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                   <SelectValue placeholder="请选择汇报对象" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-neutral-200 shadow-xl bg-white p-1">
+                  {hasReference && (
+                    <SelectItem value="auto" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">
+                      <div className="flex items-center gap-2 font-semibold text-indigo-600"><Sparkles size={14}/> 智能匹配 (根据内容推断)</div>
+                    </SelectItem>
+                  )}
                   <SelectItem value="professional" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">专业同行 / 专家 (严谨深究)</SelectItem>
                   <SelectItem value="investor" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">投资人 / 高管 (ROI导向)</SelectItem>
                   <SelectItem value="consumer" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">大众消费者 (情绪共鸣)</SelectItem>
@@ -365,6 +481,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                   <SelectItem value="short" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">电梯演讲 (约 5-8 页)</SelectItem>
                   <SelectItem value="standard" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">标准汇报 (约 12-15 页)</SelectItem>
                   <SelectItem value="long" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">深度路演 (约 20-30 页)</SelectItem>
+                  <SelectItem value="conference" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-emerald-50 focus:text-emerald-700">大型会议演讲 (约 35-45 页)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

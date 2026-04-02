@@ -116,12 +116,30 @@ def create_llm_client(
     temperature: float | None = None,
     max_tokens: int | None = None,
 ) -> LLMProvider:
-    """工厂函数 — 根据配置返回对应 LLM 供应商实例。"""
+    """工厂函数 — 根据配置返回对应 LLM 供应商实例。
+
+    优先级：
+    1. 如果配置了 LLM_BASE_URL（中转站），统一走 OpenAI 兼容协议
+    2. 否则按 LLM_PROVIDER 分别使用官方 SDK
+    """
     p = provider or settings.llm_provider
     m = model or settings.llm_model
     t = temperature if temperature is not None else settings.llm_temperature
     mt = max_tokens or settings.llm_max_tokens
+    custom_base_url = settings.llm_base_url or None
 
+    # 自定义 API 地址（中转站）→ 统一走 OpenAI 兼容协议
+    if custom_base_url:
+        # 中转站场景下，取对应 provider 的 key
+        api_key = {
+            "openai": settings.openai_api_key,
+            "grok": settings.grok_api_key,
+            "gemini": settings.gemini_api_key,
+        }.get(p, settings.openai_api_key or settings.gemini_api_key or settings.grok_api_key)
+
+        return OpenAICompatibleProvider(m, t, mt, api_key=api_key, base_url=custom_base_url)
+
+    # 官方直连
     match p:
         case "openai":
             return OpenAICompatibleProvider(m, t, mt, api_key=settings.openai_api_key)

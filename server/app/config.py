@@ -8,12 +8,13 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     llm_provider: str = "openai"  # openai | grok | gemini
     llm_model: str = "gpt-4o"
+    llm_base_url: str = ""  # 自定义 API 地址（中转站），留空则用官方默认
     llm_temperature: float = 0.7
     llm_max_tokens: int = 4096
 
     # Search
-    search_api_key: str = ""
-    search_engine: str = "bing"
+    search_engine: str = "duckduckgo"  # duckduckgo | serper
+    serper_api_key: str = ""
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"

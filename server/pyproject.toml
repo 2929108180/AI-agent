@@ -2,7 +2,6 @@
 name = "ai-ppt-agent-server"
 version = "0.1.0"
 description = "AI PPT Agent 后端服务 — LLM 驱动的演示文稿生成引擎"
-readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     # Web Framework
@@ -28,6 +27,7 @@ dependencies = [
 
     # Search Integration
     "httpx>=0.28.0",
+    "duckduckgo-search>=7.0.0",
 
     # Async Task Queue
     "celery[redis]>=5.4.0",
@@ -42,6 +42,9 @@ dependencies = [
     "loguru>=0.7.0",
     "python-dotenv>=1.0.0",
 ]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
 
 [project.optional-dependencies]
 dev = [

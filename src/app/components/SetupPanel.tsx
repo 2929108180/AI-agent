@@ -167,20 +167,27 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
 
   const currentTrackLabel = hasReference ? "Track B / Doc to PPT" : "Track A / Zero to One";
 
+  const panelMotion = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+    transition: { duration: 0.12 },
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="relative mx-auto max-w-[1320px] px-5 py-10 sm:px-8 lg:py-14 xl:px-10"
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] overflow-hidden">
-        <div className="absolute left-[8%] top-6 h-56 w-56 rounded-full bg-indigo-200/40 blur-3xl" />
-        <div className="absolute right-[12%] top-10 h-64 w-64 rounded-full bg-emerald-200/35 blur-3xl" />
-        <div className="absolute inset-x-[10%] top-24 h-px bg-gradient-to-r from-transparent via-neutral-300/70 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[320px] overflow-hidden">
+        <div className="absolute left-[10%] top-10 h-44 w-44 rounded-full bg-indigo-100/60" />
+        <div className="absolute right-[14%] top-12 h-48 w-48 rounded-full bg-emerald-100/60" />
+        <div className="absolute inset-x-[10%] top-24 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent" />
       </div>
 
       <div className="mb-12 flex flex-col items-center text-center">
-        <div className="mb-5 inline-flex items-center justify-center rounded-full border border-white/80 bg-white/80 px-4 py-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        <div className="mb-5 inline-flex items-center justify-center rounded-full border border-neutral-200 bg-white px-4 py-2 shadow-sm">
           <Wand2 className="h-5 w-5 text-indigo-600" />
         </div>
         <h1 className="mb-4 max-w-4xl text-4xl font-extrabold tracking-[-0.04em] text-neutral-900 sm:text-5xl lg:text-[3.6rem] lg:leading-[1.03]">
@@ -197,7 +204,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
         <div className="flex min-w-0 flex-col gap-6">
 
           {/* Main Choice */}
-          <div className="rounded-[32px] border border-white/80 bg-white/85 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-7 lg:p-8">
+          <div className="rounded-[32px] border border-neutral-200 bg-white p-6 shadow-sm sm:p-7 lg:p-8">
             <h3 className="text-base font-semibold text-neutral-800 mb-4">您有现成的参考资料吗？</h3>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <button
@@ -208,11 +215,11 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                 }}
                 className={`group relative min-h-[188px] overflow-hidden rounded-[28px] border p-6 text-left transition-all duration-300 ${
                   !hasReference
-                    ? "border-indigo-400 bg-gradient-to-br from-indigo-50 via-white to-white shadow-[0_22px_50px_rgba(79,70,229,0.15)] ring-4 ring-indigo-500/10"
-                    : "border-neutral-200 bg-white/70 hover:border-neutral-300 hover:bg-neutral-50/90 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
+                    ? "border-indigo-400 bg-indigo-50 shadow-md ring-2 ring-indigo-500/10"
+                    : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50"
                 }`}
               >
-                {!hasReference && <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-indigo-100/60 via-indigo-50/10 to-transparent transition-all"></div>}
+                {!hasReference && <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-indigo-100/60 to-transparent transition-all"></div>}
                 <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ring-1 transition-colors ${!hasReference ? 'bg-indigo-100 text-indigo-600 ring-indigo-200' : 'bg-neutral-100 text-neutral-500 ring-neutral-200'}`}>
                   <Lightbulb size={20} />
                 </div>
@@ -228,11 +235,11 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                 }}
                 className={`group relative min-h-[188px] overflow-hidden rounded-[28px] border p-6 text-left transition-all duration-300 ${
                   hasReference
-                    ? "border-emerald-400 bg-gradient-to-br from-emerald-50 via-white to-white shadow-[0_22px_50px_rgba(16,185,129,0.15)] ring-4 ring-emerald-500/10"
-                    : "border-neutral-200 bg-white/70 hover:border-neutral-300 hover:bg-neutral-50/90 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
+                    ? "border-emerald-400 bg-emerald-50 shadow-md ring-2 ring-emerald-500/10"
+                    : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50"
                 }`}
               >
-                {hasReference && <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-emerald-100/60 via-emerald-50/10 to-transparent transition-all"></div>}
+                {hasReference && <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-emerald-100/60 to-transparent transition-all"></div>}
                 <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ring-1 transition-colors ${hasReference ? 'bg-emerald-100 text-emerald-600 ring-emerald-200' : 'bg-neutral-100 text-neutral-500 ring-neutral-200'}`}>
                   <FileBox size={20} />
                 </div>
@@ -243,19 +250,16 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
           </div>
 
           {/* Dynamic Input Area Based on Choice */}
-          <div className="relative min-h-[420px] overflow-hidden rounded-[32px] border border-white/80 bg-white/90 shadow-[0_32px_90px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.08),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.08),transparent_28%)]" />
+          <div className="relative min-h-[420px] overflow-hidden rounded-[32px] border border-neutral-200 bg-white shadow-sm">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(248,250,252,0.9),rgba(255,255,255,0.98))]" />
             <AnimatePresence mode="wait">
               {!hasReference ? (
                 <motion.div
                   key="no-ref"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ duration: 0.2 }}
+                  {...panelMotion}
                   className="relative flex h-full w-full flex-col"
                 >
-                  <div className="flex items-center justify-between border-b border-neutral-100/80 bg-white/70 px-6 py-5 backdrop-blur-xl sm:px-8">
+                  <div className="flex items-center justify-between border-b border-neutral-100 bg-neutral-50 px-6 py-5 sm:px-8">
                     <div className="flex items-center gap-2">
                       <AlignLeft size={18} className="text-indigo-500" />
                       <h3 className="font-semibold text-neutral-800">一句话简述您的需求</h3>
@@ -268,7 +272,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                     placeholder="例如：我要做一场介绍全新 AI 智能咖啡机的产品发布会。受众是科技极客和咖啡爱好者。核心卖点是：豆种智能识别、微米级研磨、全息温控..."
                     className="min-h-[320px] flex-1 w-full resize-none bg-transparent px-6 py-7 text-base leading-8 text-neutral-700 outline-none placeholder-neutral-400 disabled:opacity-50 sm:px-8"
                   />
-                  <div className="flex min-h-[72px] items-center justify-between border-t border-neutral-100/80 bg-neutral-50/70 px-4 py-3 sm:px-6">
+                  <div className="flex min-h-[72px] items-center justify-between border-t border-neutral-100 bg-neutral-50 px-4 py-3 sm:px-6">
                     {/* Undo Button */}
                     <AnimatePresence>
                       {isPolished && (
@@ -295,7 +299,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                           <button
                             onClick={() => handlePolish()}
                             disabled={!topic.trim() || isGenerating}
-                            className="flex items-center gap-1.5 rounded-2xl border border-indigo-100 bg-white px-4 py-2 text-sm font-semibold text-indigo-600 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="flex items-center gap-1.5 rounded-2xl border border-indigo-100 bg-white px-4 py-2 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <Sparkles size={16} /> AI 润色扩写
                           </button>
@@ -320,13 +324,10 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
               ) : (
                 <motion.div
                   key="has-ref"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
+                  {...panelMotion}
                   className="relative flex h-full w-full flex-col bg-neutral-50/20"
                 >
-                  <div className="flex items-center justify-between border-b border-neutral-100/80 bg-white/75 px-6 py-5 backdrop-blur-xl sm:px-8">
+                  <div className="flex items-center justify-between border-b border-neutral-100 bg-neutral-50 px-6 py-5 sm:px-8">
                     <div className="flex items-center gap-2">
                       <FileText size={18} className="text-emerald-500" />
                       <h3 className="font-semibold text-neutral-800">提供您的参考资料</h3>
@@ -339,7 +340,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                       {!uploadedFile ? (
                         <div
                           onClick={() => !isGenerating && fileInputRef.current?.click()}
-                          className="group flex w-full cursor-pointer flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-neutral-300 bg-white/90 p-10 transition-all hover:border-emerald-400 hover:bg-emerald-50/60"
+                          className="group flex w-full cursor-pointer flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-neutral-300 bg-white p-10 transition-colors hover:border-emerald-400 hover:bg-emerald-50/60"
                         >
                           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 ring-1 ring-emerald-100 transition-transform group-hover:scale-110">
                             <UploadCloud size={24} strokeWidth={2} />
@@ -355,7 +356,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                           />
                         </div>
                       ) : (
-                        <div className="flex w-full items-center justify-between rounded-[28px] border border-emerald-200 bg-emerald-50/70 p-6 shadow-sm">
+                        <div className="flex w-full items-center justify-between rounded-[28px] border border-emerald-200 bg-emerald-50/70 p-6">
                           <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-100 bg-white text-emerald-500 shadow-sm">
                               <FileText size={24} />
@@ -383,7 +384,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                     </div>
 
                     {/* Text Paste Section */}
-                    <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-neutral-200 bg-white/90 shadow-sm transition-all focus-within:border-emerald-400 focus-within:ring-1 focus-within:ring-emerald-400">
+                    <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-neutral-200 bg-white transition-all focus-within:border-emerald-400 focus-within:ring-1 focus-within:ring-emerald-400">
                       <textarea
                         value={referenceText}
                         onChange={(e) => setReferenceText(e.target.value)}
@@ -392,7 +393,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                         className="min-h-[210px] flex-1 w-full resize-none bg-transparent p-5 text-sm leading-7 text-neutral-700 outline-none placeholder-neutral-400"
                       />
                       {/* Action Bar for Polish */}
-                      <div className="flex min-h-[58px] items-center justify-between rounded-b-[28px] border-t border-neutral-100 bg-neutral-50/60 p-3">
+                      <div className="flex min-h-[58px] items-center justify-between rounded-b-[28px] border-t border-neutral-100 bg-neutral-50 p-3">
                         {/* Undo Button */}
                         <AnimatePresence>
                           {isPolished && (
@@ -419,7 +420,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                               <button
                                 onClick={() => handlePolish()}
                                 disabled={!referenceText.trim() || isGenerating}
-                                className="flex items-center gap-1.5 rounded-2xl border border-emerald-100 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-600 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="flex items-center gap-1.5 rounded-2xl border border-emerald-100 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-600 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
                               >
                                 <Sparkles size={14} /> AI 润色扩写
                               </button>
@@ -458,7 +459,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
             </div>
           </div>
 
-          <div className="rounded-[32px] border border-white/80 bg-white/90 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+          <div className="rounded-[32px] border border-neutral-200 bg-white p-6 shadow-sm">
             <div className="space-y-6">
               <div className="border-b border-neutral-100 pb-3">
                 <h3 className="font-semibold text-neutral-800">目标与规格</h3>
@@ -470,7 +471,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                   <Target size={16} className="text-indigo-500" /> 汇报对象 (Audience)
                 </label>
                 <Select value={audience} onValueChange={setAudience}>
-                  <SelectTrigger className="h-[44px] w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-sm shadow-inner transition-colors outline-none focus:ring-1 focus:ring-indigo-500 data-[state=open]:border-indigo-500 data-[state=open]:ring-1 data-[state=open]:ring-indigo-500">
+                  <SelectTrigger className="h-[44px] w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-sm transition-colors outline-none focus:ring-1 focus:ring-indigo-500 data-[state=open]:border-indigo-500 data-[state=open]:ring-1 data-[state=open]:ring-indigo-500">
                     <SelectValue placeholder="请选择汇报对象" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-neutral-200 bg-white p-1 shadow-xl">
@@ -480,7 +481,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                       </SelectItem>
                     )}
                     <SelectItem value="professional" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">专业同行 / 专家 (严谨深究)</SelectItem>
-                    <SelectItem value="investor" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">投资人 / 高管 (ROI	alpha导向)</SelectItem>
+                    <SelectItem value="investor" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">投资人 / 高管 (ROI导向)</SelectItem>
                     <SelectItem value="consumer" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">大众消费者 (情绪共鸣)</SelectItem>
                     <SelectItem value="internal" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">内部员工 / 培训 (清晰结构)</SelectItem>
                   </SelectContent>
@@ -492,7 +493,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                   <FileText size={16} className="text-indigo-500" /> 预期篇幅 (Length)
                 </label>
                 <Select value={length} onValueChange={setLength}>
-                  <SelectTrigger className="h-[44px] w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-sm shadow-inner transition-colors outline-none focus:ring-1 focus:ring-indigo-500 data-[state=open]:border-indigo-500 data-[state=open]:ring-1 data-[state=open]:ring-indigo-500">
+                  <SelectTrigger className="h-[44px] w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-sm transition-colors outline-none focus:ring-1 focus:ring-indigo-500 data-[state=open]:border-indigo-500 data-[state=open]:ring-1 data-[state=open]:ring-indigo-500">
                     <SelectValue placeholder="请选择预期篇幅" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-neutral-200 bg-white p-1 shadow-xl">
@@ -549,7 +550,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}
             transition={{ type: "spring", bounce: 0, duration: 0.5 }}
-            className="fixed bottom-0 left-0 right-0 bg-neutral-900/95 backdrop-blur-xl text-neutral-300 p-6 rounded-t-3xl shadow-2xl z-50 max-h-[40vh] overflow-hidden flex flex-col border-t border-white/10"
+            className="fixed bottom-0 left-0 right-0 bg-neutral-900/95 text-neutral-300 p-6 rounded-t-3xl shadow-2xl z-50 max-h-[40vh] overflow-hidden flex flex-col border-t border-white/10"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">

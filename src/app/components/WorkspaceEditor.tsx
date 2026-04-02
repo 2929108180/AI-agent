@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Type, Sparkles, LayoutGrid, Palette, Layers, 
-  Move, ZoomIn, Search, Send, Grid, Wand2, X, ChevronLeft, ChevronRight
+  Move, ZoomIn, Search, Send, Grid, Wand2, X, ChevronLeft, ChevronRight, Loader2
 } from "lucide-react";
 
 // Types for our Mock Editor State

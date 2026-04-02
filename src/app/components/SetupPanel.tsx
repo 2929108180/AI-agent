@@ -165,47 +165,55 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
     return "提取核心知识并生成大纲";
   };
 
+  const currentTrackLabel = hasReference ? "Track B / Doc to PPT" : "Track A / Zero to One";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-5xl mx-auto py-10 px-6 sm:px-8"
+      className="relative mx-auto max-w-[1320px] px-5 py-10 sm:px-8 lg:py-14 xl:px-10"
     >
-      <div className="mb-10 flex flex-col items-center text-center">
-        <div className="inline-flex items-center justify-center p-3 bg-indigo-50/50 rounded-2xl mb-4 border border-indigo-100">
-          <Wand2 className="text-indigo-600 w-8 h-8" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] overflow-hidden">
+        <div className="absolute left-[8%] top-6 h-56 w-56 rounded-full bg-indigo-200/40 blur-3xl" />
+        <div className="absolute right-[12%] top-10 h-64 w-64 rounded-full bg-emerald-200/35 blur-3xl" />
+        <div className="absolute inset-x-[10%] top-24 h-px bg-gradient-to-r from-transparent via-neutral-300/70 to-transparent" />
+      </div>
+
+      <div className="mb-12 flex flex-col items-center text-center">
+        <div className="mb-5 inline-flex items-center justify-center rounded-full border border-white/80 bg-white/80 px-4 py-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+          <Wand2 className="h-5 w-5 text-indigo-600" />
         </div>
-        <h1 className="text-4xl font-extrabold text-neutral-900 tracking-tight mb-4">
+        <h1 className="mb-4 max-w-4xl text-4xl font-extrabold tracking-[-0.04em] text-neutral-900 sm:text-5xl lg:text-[3.6rem] lg:leading-[1.03]">
           创建全新的演示文稿
         </h1>
-        <p className="text-base text-neutral-500 max-w-2xl leading-relaxed">
+        <p className="max-w-3xl text-base leading-8 text-neutral-500 sm:text-lg">
           告诉 AI 您的出发点。如果您只有大概想法，AI 将为您发散结构；如果您已有详细资料，AI 将精准提取知识。
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.5fr)_360px] xl:items-start">
 
         {/* Left Column: Generation Modes & Input */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
 
           {/* Main Choice */}
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-neutral-200">
+          <div className="rounded-[32px] border border-white/80 bg-white/85 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-7 lg:p-8">
             <h3 className="text-base font-semibold text-neutral-800 mb-4">您有现成的参考资料吗？</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <button
                 onClick={() => {
                   if (isGenerating) return;
                   setHasReference(false);
                   if (audience === "auto") setAudience("professional");
                 }}
-                className={`relative p-5 rounded-2xl border-2 text-left transition-all overflow-hidden group ${
+                className={`group relative min-h-[188px] overflow-hidden rounded-[28px] border p-6 text-left transition-all duration-300 ${
                   !hasReference
-                    ? "border-indigo-500 bg-indigo-50/30 ring-4 ring-indigo-500/10"
-                    : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50"
+                    ? "border-indigo-400 bg-gradient-to-br from-indigo-50 via-white to-white shadow-[0_22px_50px_rgba(79,70,229,0.15)] ring-4 ring-indigo-500/10"
+                    : "border-neutral-200 bg-white/70 hover:border-neutral-300 hover:bg-neutral-50/90 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
                 }`}
               >
-                {!hasReference && <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-500/10 rounded-bl-[100px] -z-10 transition-all"></div>}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 transition-colors ${!hasReference ? 'bg-indigo-100 text-indigo-600' : 'bg-neutral-100 text-neutral-500'}`}>
+                {!hasReference && <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-indigo-100/60 via-indigo-50/10 to-transparent transition-all"></div>}
+                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ring-1 transition-colors ${!hasReference ? 'bg-indigo-100 text-indigo-600 ring-indigo-200' : 'bg-neutral-100 text-neutral-500 ring-neutral-200'}`}>
                   <Lightbulb size={20} />
                 </div>
                 <div className={`font-semibold text-base mb-1 ${!hasReference ? 'text-indigo-900' : 'text-neutral-700'}`}>从零开始发散</div>
@@ -218,14 +226,14 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                   setHasReference(true);
                   setAudience("auto");
                 }}
-                className={`relative p-5 rounded-2xl border-2 text-left transition-all overflow-hidden group ${
+                className={`group relative min-h-[188px] overflow-hidden rounded-[28px] border p-6 text-left transition-all duration-300 ${
                   hasReference
-                    ? "border-emerald-500 bg-emerald-50/30 ring-4 ring-emerald-500/10"
-                    : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50"
+                    ? "border-emerald-400 bg-gradient-to-br from-emerald-50 via-white to-white shadow-[0_22px_50px_rgba(16,185,129,0.15)] ring-4 ring-emerald-500/10"
+                    : "border-neutral-200 bg-white/70 hover:border-neutral-300 hover:bg-neutral-50/90 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
                 }`}
               >
-                {hasReference && <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-bl-[100px] -z-10 transition-all"></div>}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 transition-colors ${hasReference ? 'bg-emerald-100 text-emerald-600' : 'bg-neutral-100 text-neutral-500'}`}>
+                {hasReference && <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-emerald-100/60 via-emerald-50/10 to-transparent transition-all"></div>}
+                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ring-1 transition-colors ${hasReference ? 'bg-emerald-100 text-emerald-600 ring-emerald-200' : 'bg-neutral-100 text-neutral-500 ring-neutral-200'}`}>
                   <FileBox size={20} />
                 </div>
                 <div className={`font-semibold text-base mb-1 ${hasReference ? 'text-emerald-900' : 'text-neutral-700'}`}>基于已有资料提炼</div>
@@ -235,7 +243,8 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
           </div>
 
           {/* Dynamic Input Area Based on Choice */}
-          <div className="bg-white rounded-3xl shadow-sm border border-neutral-200 overflow-hidden relative min-h-[320px]">
+          <div className="relative min-h-[420px] overflow-hidden rounded-[32px] border border-white/80 bg-white/90 shadow-[0_32px_90px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.08),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.08),transparent_28%)]" />
             <AnimatePresence mode="wait">
               {!hasReference ? (
                 <motion.div
@@ -244,9 +253,9 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
                   transition={{ duration: 0.2 }}
-                  className="flex flex-col h-full w-full"
+                  className="relative flex h-full w-full flex-col"
                 >
-                  <div className="p-5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+                  <div className="flex items-center justify-between border-b border-neutral-100/80 bg-white/70 px-6 py-5 backdrop-blur-xl sm:px-8">
                     <div className="flex items-center gap-2">
                       <AlignLeft size={18} className="text-indigo-500" />
                       <h3 className="font-semibold text-neutral-800">一句话简述您的需求</h3>
@@ -257,9 +266,9 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                     onChange={(e) => setTopic(e.target.value)}
                     disabled={isGenerating}
                     placeholder="例如：我要做一场介绍全新 AI 智能咖啡机的产品发布会。受众是科技极客和咖啡爱好者。核心卖点是：豆种智能识别、微米级研磨、全息温控..."
-                    className="flex-1 w-full p-6 text-neutral-700 text-base leading-relaxed outline-none resize-none bg-transparent placeholder-neutral-400 disabled:opacity-50"
+                    className="min-h-[320px] flex-1 w-full resize-none bg-transparent px-6 py-7 text-base leading-8 text-neutral-700 outline-none placeholder-neutral-400 disabled:opacity-50 sm:px-8"
                   />
-                  <div className="p-3 bg-neutral-50/50 border-t border-neutral-100 flex items-center justify-between min-h-[60px]">
+                  <div className="flex min-h-[72px] items-center justify-between border-t border-neutral-100/80 bg-neutral-50/70 px-4 py-3 sm:px-6">
                     {/* Undo Button */}
                     <AnimatePresence>
                       {isPolished && (
@@ -277,16 +286,16 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                     </AnimatePresence>
                     
                     {/* Action buttons */}
-                    <div className="flex items-center gap-2 ml-auto">
+                    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                        {isPolishing ? (
-                          <div className="px-4 py-2 rounded-xl text-sm font-semibold text-indigo-600 flex items-center gap-2">
+                          <div className="flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-indigo-600 shadow-sm">
                              <Loader2 size={16} className="animate-spin" /> AI 思考中...
                           </div>
                        ) : !isPolished ? (
                           <button
                             onClick={() => handlePolish()}
                             disabled={!topic.trim() || isGenerating}
-                            className="text-indigo-600 bg-white border border-indigo-100 hover:bg-indigo-50 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5"
+                            className="flex items-center gap-1.5 rounded-2xl border border-indigo-100 bg-white px-4 py-2 text-sm font-semibold text-indigo-600 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <Sparkles size={16} /> AI 润色扩写
                           </button>
@@ -294,7 +303,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                           <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex bg-white shadow-sm border border-neutral-200 rounded-xl p-1 overflow-hidden"
+                            className="flex flex-wrap overflow-hidden rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm"
                           >
                              <button onClick={() => handlePolish("更详尽")} disabled={isGenerating} className="px-3 py-1.5 text-xs font-medium text-neutral-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1">✨ 更详尽</button>
                              <button onClick={() => handlePolish("更精简")} disabled={isGenerating} className="px-3 py-1.5 text-xs font-medium text-neutral-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1">🔪 更精简</button>
@@ -315,24 +324,24 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="flex flex-col h-full w-full bg-neutral-50/30"
+                  className="relative flex h-full w-full flex-col bg-neutral-50/20"
                 >
-                  <div className="p-5 border-b border-neutral-100 flex items-center justify-between bg-white">
+                  <div className="flex items-center justify-between border-b border-neutral-100/80 bg-white/75 px-6 py-5 backdrop-blur-xl sm:px-8">
                     <div className="flex items-center gap-2">
                       <FileText size={18} className="text-emerald-500" />
                       <h3 className="font-semibold text-neutral-800">提供您的参考资料</h3>
                     </div>
                   </div>
 
-                  <div className="p-6 flex-1 flex flex-col gap-5">
+                  <div className="flex flex-1 flex-col gap-5 p-6 sm:p-8">
                     {/* File Upload Section */}
                     <div>
                       {!uploadedFile ? (
                         <div
                           onClick={() => !isGenerating && fileInputRef.current?.click()}
-                          className="w-full border-2 border-dashed border-neutral-300 hover:border-emerald-400 hover:bg-emerald-50/50 rounded-2xl flex flex-col items-center justify-center p-8 transition-all cursor-pointer group bg-white"
+                          className="group flex w-full cursor-pointer flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-neutral-300 bg-white/90 p-10 transition-all hover:border-emerald-400 hover:bg-emerald-50/60"
                         >
-                          <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 ring-1 ring-emerald-100 transition-transform group-hover:scale-110">
                             <UploadCloud size={24} strokeWidth={2} />
                           </div>
                           <p className="text-sm font-semibold text-neutral-800 mb-1">点击上传文档 (PDF / Word / PPT)</p>
@@ -346,9 +355,9 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                           />
                         </div>
                       ) : (
-                        <div className="w-full border border-emerald-200 bg-emerald-50/50 rounded-2xl p-6 flex items-center justify-between">
+                        <div className="flex w-full items-center justify-between rounded-[28px] border border-emerald-200 bg-emerald-50/70 p-6 shadow-sm">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-emerald-100 flex items-center justify-center text-emerald-500">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-100 bg-white text-emerald-500 shadow-sm">
                               <FileText size={24} />
                             </div>
                             <div>
@@ -367,23 +376,23 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 px-1">
                       <div className="flex-1 h-px bg-neutral-200"></div>
                       <span className="text-xs font-medium text-neutral-400 tracking-widest">+ (可选配合补充说明)</span>
                       <div className="flex-1 h-px bg-neutral-200"></div>
                     </div>
 
                     {/* Text Paste Section */}
-                    <div className="flex-1 flex flex-col rounded-2xl border border-neutral-200 transition-all bg-white focus-within:border-emerald-400 focus-within:ring-1 focus-within:ring-emerald-400 shadow-sm overflow-hidden">
+                    <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-neutral-200 bg-white/90 shadow-sm transition-all focus-within:border-emerald-400 focus-within:ring-1 focus-within:ring-emerald-400">
                       <textarea
                         value={referenceText}
                         onChange={(e) => setReferenceText(e.target.value)}
                         disabled={isGenerating}
                         placeholder={uploadedFile ? "+ 在此补充附加要求或具体文本说明（可选）..." : "直接在此粘贴您的长篇草稿、会议纪要或参考文章..."}
-                        className="flex-1 w-full min-h-[160px] p-4 text-sm text-neutral-700 leading-relaxed outline-none resize-none bg-transparent placeholder-neutral-400"
+                        className="min-h-[210px] flex-1 w-full resize-none bg-transparent p-5 text-sm leading-7 text-neutral-700 outline-none placeholder-neutral-400"
                       />
                       {/* Action Bar for Polish */}
-                      <div className="p-2.5 bg-neutral-50/50 border-t border-neutral-100 flex items-center justify-between min-h-[50px] rounded-b-2xl">
+                      <div className="flex min-h-[58px] items-center justify-between rounded-b-[28px] border-t border-neutral-100 bg-neutral-50/60 p-3">
                         {/* Undo Button */}
                         <AnimatePresence>
                           {isPolished && (
@@ -401,16 +410,16 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                         </AnimatePresence>
                         
                         {/* Action buttons */}
-                        <div className="flex items-center gap-2 ml-auto">
+                        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                            {isPolishing ? (
-                              <div className="px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-600 flex items-center gap-2">
+                              <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-1.5 text-xs font-semibold text-emerald-600 shadow-sm">
                                  <Loader2 size={14} className="animate-spin" /> AI 思考中...
                               </div>
                            ) : !isPolished ? (
                               <button
                                 onClick={() => handlePolish()}
                                 disabled={!referenceText.trim() || isGenerating}
-                                className="text-emerald-600 bg-white border border-emerald-100 hover:bg-emerald-50 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5"
+                                className="flex items-center gap-1.5 rounded-2xl border border-emerald-100 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-600 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
                               >
                                 <Sparkles size={14} /> AI 润色扩写
                               </button>
@@ -418,7 +427,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                               <motion.div 
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="flex bg-white shadow-sm border border-neutral-200 rounded-xl p-1 overflow-hidden"
+                                className="flex flex-wrap overflow-hidden rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm"
                               >
                                  <button onClick={() => handlePolish("更详尽")} disabled={isGenerating} className="px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1">✨ 更详尽</button>
                                  <button onClick={() => handlePolish("更精简")} disabled={isGenerating} className="px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1">🔪 更精简</button>
@@ -440,64 +449,73 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
         </div>
 
         {/* Right Column: Settings & CTA */}
-        <div className="flex flex-col gap-6">
-          <div className="bg-white rounded-3xl shadow-sm border border-neutral-200 p-6 space-y-6 flex-1">
-            <div className="border-b border-neutral-100 pb-3">
-              <h3 className="font-semibold text-neutral-800">目标与规格</h3>
-              <p className="text-xs text-neutral-500 mt-1">精细控制生成结果的调性</p>
-            </div>
-
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
-                <Target size={16} className="text-indigo-500" /> 汇报对象 (Audience)
-              </label>
-              <Select value={audience} onValueChange={setAudience}>
-                <SelectTrigger className="w-full bg-neutral-50 border border-neutral-200 rounded-xl h-[42px] px-3 text-sm outline-none focus:ring-1 focus:ring-indigo-500 transition-colors shadow-inner data-[state=open]:ring-1 data-[state=open]:ring-indigo-500 data-[state=open]:border-indigo-500">
-                  <SelectValue placeholder="请选择汇报对象" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-neutral-200 shadow-xl bg-white p-1">
-                  {hasReference && (
-                    <SelectItem value="auto" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">
-                      <div className="flex items-center gap-2 font-semibold text-indigo-600"><Sparkles size={14}/> 智能匹配 (根据内容推断)</div>
-                    </SelectItem>
-                  )}
-                  <SelectItem value="professional" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">专业同行 / 专家 (严谨深究)</SelectItem>
-                  <SelectItem value="investor" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">投资人 / 高管 (ROI导向)</SelectItem>
-                  <SelectItem value="consumer" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">大众消费者 (情绪共鸣)</SelectItem>
-                  <SelectItem value="internal" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">内部员工 / 培训 (清晰结构)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
-                <FileText size={16} className="text-indigo-500" /> 预期篇幅 (Length)
-              </label>
-              <Select value={length} onValueChange={setLength}>
-                <SelectTrigger className="w-full bg-neutral-50 border border-neutral-200 rounded-xl h-[42px] px-3 text-sm outline-none focus:ring-1 focus:ring-indigo-500 transition-colors shadow-inner data-[state=open]:ring-1 data-[state=open]:ring-indigo-500 data-[state=open]:border-indigo-500">
-                  <SelectValue placeholder="请选择预期篇幅" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-neutral-200 shadow-xl bg-white p-1">
-                  <SelectItem value="short" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">电梯演讲 (约 5-8 页)</SelectItem>
-                  <SelectItem value="standard" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">标准汇报 (约 12-15 页)</SelectItem>
-                  <SelectItem value="long" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">深度路演 (约 20-30 页)</SelectItem>
-                  <SelectItem value="conference" className="rounded-lg cursor-pointer hover:bg-neutral-50 focus:bg-emerald-50 focus:text-emerald-700">大型会议演讲 (约 35-45 页)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mt-auto">
-               <p className="text-xs text-blue-800 leading-relaxed">
-                 基于您的选择，后台引擎将会调用 <strong className="font-semibold">{!hasReference ? 'Prompt 1-A' : 'Prompt 1-B'}</strong> 链路，进行对应的结构抽象计算。
-               </p>
+        <div className="flex flex-col gap-4 xl:sticky xl:top-6">
+          <div className={`rounded-[24px] border px-4 py-4 ${hasReference ? "border-emerald-100 bg-emerald-50/80" : "border-indigo-100 bg-indigo-50/80"}`}>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-400">Current track</div>
+            <div className={`mt-2 text-sm font-semibold ${hasReference ? "text-emerald-800" : "text-indigo-800"}`}>{currentTrackLabel}</div>
+            <div className="mt-1 text-xs leading-6 text-neutral-500">
+              {hasReference ? "Use source material for a more grounded outline." : "Start from a topic and let the model expand the structure."}
             </div>
           </div>
 
-          {/* Submit / Cancel Buttons */}
+          <div className="rounded-[32px] border border-white/80 bg-white/90 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+            <div className="space-y-6">
+              <div className="border-b border-neutral-100 pb-3">
+                <h3 className="font-semibold text-neutral-800">目标与规格</h3>
+                <p className="mt-1 text-xs text-neutral-500">精细控制生成结果的调性</p>
+              </div>
+
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
+                  <Target size={16} className="text-indigo-500" /> 汇报对象 (Audience)
+                </label>
+                <Select value={audience} onValueChange={setAudience}>
+                  <SelectTrigger className="h-[44px] w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-sm shadow-inner transition-colors outline-none focus:ring-1 focus:ring-indigo-500 data-[state=open]:border-indigo-500 data-[state=open]:ring-1 data-[state=open]:ring-indigo-500">
+                    <SelectValue placeholder="请选择汇报对象" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-neutral-200 bg-white p-1 shadow-xl">
+                    {hasReference && (
+                      <SelectItem value="auto" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">
+                        <div className="flex items-center gap-2 font-semibold text-indigo-600"><Sparkles size={14}/> 智能匹配 (根据内容推断)</div>
+                      </SelectItem>
+                    )}
+                    <SelectItem value="professional" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">专业同行 / 专家 (严谨深究)</SelectItem>
+                    <SelectItem value="investor" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">投资人 / 高管 (ROI	alpha导向)</SelectItem>
+                    <SelectItem value="consumer" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">大众消费者 (情绪共鸣)</SelectItem>
+                    <SelectItem value="internal" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">内部员工 / 培训 (清晰结构)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
+                  <FileText size={16} className="text-indigo-500" /> 预期篇幅 (Length)
+                </label>
+                <Select value={length} onValueChange={setLength}>
+                  <SelectTrigger className="h-[44px] w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-sm shadow-inner transition-colors outline-none focus:ring-1 focus:ring-indigo-500 data-[state=open]:border-indigo-500 data-[state=open]:ring-1 data-[state=open]:ring-indigo-500">
+                    <SelectValue placeholder="请选择预期篇幅" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-neutral-200 bg-white p-1 shadow-xl">
+                    <SelectItem value="short" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">电梯演讲 (约 5-8 页)</SelectItem>
+                    <SelectItem value="standard" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">标准汇报 (约 12-15 页)</SelectItem>
+                    <SelectItem value="long" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">深度路演 (约 20-30 页)</SelectItem>
+                    <SelectItem value="conference" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-emerald-50 focus:text-emerald-700">大型会议演讲 (约 35-45 页)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                <p className="text-xs leading-relaxed text-blue-800">
+                  基于您的选择，后台引擎将会调用 <strong className="font-semibold">{!hasReference ? "Prompt 1-A" : "Prompt 1-B"}</strong> 链路，进行对应的结构抽象计算。
+                </p>
+              </div>
+            </div>
+          </div>
+
           {isGenerating ? (
             <button
               onClick={handleCancel}
-              className="w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-300 bg-neutral-800 text-white shadow-xl hover:bg-neutral-700"
+              className="flex w-full items-center justify-center gap-2 rounded-[22px] bg-neutral-900 py-4 font-bold text-white shadow-xl transition-all duration-300 hover:bg-neutral-700"
             >
               <X size={18} /> 取消生成
             </button>
@@ -505,19 +523,19 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
             <button
               onClick={handleSubmit}
               disabled={!canSubmit}
-              className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-300 relative overflow-hidden group ${
+              className={`group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-[22px] py-4 font-bold transition-all duration-300 ${
                 canSubmit
                   ? (generationPhase === "error"
-                      ? "bg-rose-600 text-white shadow-xl hover:shadow-rose-600/30 hover:-translate-y-0.5"
+                      ? "bg-rose-600 text-white shadow-xl hover:-translate-y-0.5 hover:shadow-rose-600/30"
                       : !hasReference
-                        ? "bg-indigo-600 text-white shadow-xl hover:shadow-indigo-600/30 hover:-translate-y-0.5"
-                        : "bg-emerald-600 text-white shadow-xl hover:shadow-emerald-600/30 hover:-translate-y-0.5")
-                  : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                        ? "bg-indigo-600 text-white shadow-xl hover:-translate-y-0.5 hover:shadow-indigo-600/30"
+                        : "bg-emerald-600 text-white shadow-xl hover:-translate-y-0.5 hover:shadow-emerald-600/30")
+                  : "cursor-not-allowed bg-neutral-100 text-neutral-400"
               }`}
             >
-              {canSubmit && <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>}
+              {canSubmit && <div className="absolute inset-0 translate-y-full bg-white/20 transition-transform duration-300 ease-out group-hover:translate-y-0"></div>}
               {buttonText()}
-              <ArrowRight size={18} className={canSubmit ? "group-hover:translate-x-1 transition-transform" : ""} />
+              <ArrowRight size={18} className={canSubmit ? "transition-transform group-hover:translate-x-1" : ""} />
             </button>
           )}
         </div>

@@ -8,7 +8,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
-import type { SlideCard } from "../types";
+import { fetchSSE } from "../lib/sse";
+import type { SetupSession, SlideCard } from "../types";
 
 // 开发阶段默认大纲（后端未连接时的占位数据）
 const DEFAULT_OUTLINE: SlideCard[] = [
@@ -65,13 +66,27 @@ const DEFAULT_OUTLINE: SlideCard[] = [
 interface StickyOutlinePanelProps {
   initialOutline: SlideCard[];
   onOutlineChange?: (slides: SlideCard[]) => void;
+  setupSession: SetupSession | null;
+  enrichedIndices: number[];
+  onEnrichedIndicesChange?: (value: number[]) => void;
 }
 
-export function StickyOutlinePanel({ initialOutline, onOutlineChange }: StickyOutlinePanelProps) {
+export function StickyOutlinePanel({
+  initialOutline,
+  onOutlineChange,
+  setupSession,
+  enrichedIndices,
+  onEnrichedIndicesChange,
+}: StickyOutlinePanelProps) {
   const [outline, setOutline] = useState<SlideCard[]>(
     initialOutline.length > 0 ? initialOutline : DEFAULT_OUTLINE
   );
   const [isJsonView, setIsJsonView] = useState(false);
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichProgress, setEnrichProgress] = useState<Record<number, { status: string; title: string }>>({});
+  const [isRegeneratingOutline, setIsRegeneratingOutline] = useState(false);
+  const [isOptimizingOutline, setIsOptimizingOutline] = useState(false);
+  const [singleEnrichingIndex, setSingleEnrichingIndex] = useState<number | null>(null);
 
   // AI Add Page State
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -126,6 +141,136 @@ export function StickyOutlinePanel({ initialOutline, onOutlineChange }: StickyOu
     }
   };
 
+  const handleEnrichOutline = async () => {
+    if (isEnriching || outline.length === 0) return;
+
+    setIsEnriching(true);
+    setEnrichProgress({});
+
+    try {
+      await fetchSSE("/api/v1/outline/enrich", { slides: outline }, {
+        onEnrichProgress: (data) => {
+          setEnrichProgress((prev) => ({
+            ...prev,
+            [data.index]: {
+              status: data.status,
+              title: data.title,
+            },
+          }));
+
+          if (data.slide) {
+            setOutline((prev) => prev.map((slide, index) => (
+              index === data.index ? (data.slide as SlideCard) : slide
+            )));
+          }
+        },
+        onEnrichComplete: (slides) => {
+          setOutline(slides);
+          onEnrichedIndicesChange?.(
+            slides
+              .map((slide, index) => (!["cover", "agenda", "ending"].includes(slide.type) ? index : -1))
+              .filter((index) => index >= 0)
+          );
+          setIsEnriching(false);
+        },
+        onError: (msg) => {
+          console.error("Enrich outline error:", msg);
+          setIsEnriching(false);
+        },
+        onDone: () => setIsEnriching(false),
+      });
+    } catch (err) {
+      console.error("Enrich outline failed:", err);
+      setIsEnriching(false);
+    }
+  };
+
+  const handleRegenerateOutline = async () => {
+    if (!setupSession || isRegeneratingOutline) return;
+    if (!window.confirm("重新生成大纲会覆盖当前 Step 2 的调整，是否继续？")) return;
+
+    setIsRegeneratingOutline(true);
+
+    const contextParts = [
+      setupSession.referenceText,
+      setupSession.interviewContext,
+      setupSession.interviewAnswers.map((item) => `${item.question}: ${item.answer}`).join("\n"),
+    ].filter(Boolean);
+
+    const extraParts = [
+      setupSession.customAudience ? `自定义汇报对象: ${setupSession.customAudience}` : "",
+      setupSession.customAudienceNote ? `补充说明: ${setupSession.customAudienceNote}` : "",
+      setupSession.sourceLabel ? `来源: ${setupSession.sourceLabel}` : "",
+    ].filter(Boolean);
+
+    try {
+      await fetchSSE("/api/v1/outline/generate", {
+        topic: setupSession.topic || setupSession.sourceLabel,
+        audience: setupSession.audience,
+        length: setupSession.length,
+        context: contextParts.join("\n\n"),
+        extra: extraParts.join("\n"),
+      }, {
+        onOutline: (slides) => {
+          setOutline(slides);
+          onEnrichedIndicesChange?.([]);
+        },
+        onError: (msg) => console.error("Regenerate outline error:", msg),
+        onDone: () => setIsRegeneratingOutline(false),
+      });
+    } catch (err) {
+      console.error("Regenerate outline failed:", err);
+      setIsRegeneratingOutline(false);
+    }
+  };
+
+  const handleOptimizeOutline = async () => {
+    if (isOptimizingOutline || outline.length === 0) return;
+
+    setIsOptimizingOutline(true);
+
+    try {
+      await fetchSSE("/api/v1/outline/optimize", {
+        slides: outline,
+        instruction: "",
+        strategy_brief: "",
+      }, {
+        onOutline: (slides) => {
+          setOutline(slides);
+          onEnrichedIndicesChange?.([]);
+        },
+        onError: (msg) => console.error("Optimize outline error:", msg),
+        onDone: () => setIsOptimizingOutline(false),
+      });
+    } catch (err) {
+      console.error("Optimize outline failed:", err);
+      setIsOptimizingOutline(false);
+    }
+  };
+
+  const handleEnrichSingle = async (index: number) => {
+    const slide = outline[index];
+    if (!slide || singleEnrichingIndex !== null) return;
+
+    setSingleEnrichingIndex(index);
+    try {
+      const resp = await fetch("/api/v1/outline/enrich-single", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slide, strategy_brief: "" }),
+      });
+
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const enrichedSlide: SlideCard = await resp.json();
+      setOutline((prev) => prev.map((item, i) => (i === index ? enrichedSlide : item)));
+      onEnrichedIndicesChange?.(Array.from(new Set([...enrichedIndices, index])).sort((a, b) => a - b));
+    } catch (err) {
+      console.error("Single slide enrich failed:", err);
+    } finally {
+      setSingleEnrichingIndex(null);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -143,7 +288,47 @@ export function StickyOutlinePanel({ initialOutline, onOutlineChange }: StickyOu
             基于专家模型生成的结构化大纲，您可以自由修改这些便利贴卡片，作为排版的骨架。
           </p>
         </div>
-        <div className="flex gap-3 bg-white p-1 rounded-xl shadow-sm border border-neutral-200">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRegenerateOutline}
+            disabled={!setupSession || isRegeneratingOutline}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              isRegeneratingOutline
+                ? "bg-neutral-200 text-neutral-500"
+                : "bg-neutral-900 text-white hover:bg-neutral-800 shadow-sm"
+            }`}
+          >
+            {isRegeneratingOutline ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            {isRegeneratingOutline ? "重生成中..." : "重新生成大纲"}
+          </button>
+
+          <button
+            onClick={handleOptimizeOutline}
+            disabled={isOptimizingOutline || outline.length === 0}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              isOptimizingOutline
+                ? "bg-amber-100 text-amber-700"
+                : "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
+            }`}
+          >
+            {isOptimizingOutline ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            {isOptimizingOutline ? "优化中..." : "AI 优化大纲"}
+          </button>
+
+          <button
+            onClick={handleEnrichOutline}
+            disabled={isEnriching || outline.length === 0}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              isEnriching
+                ? "bg-indigo-100 text-indigo-600"
+                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+            }`}
+          >
+            {isEnriching ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {isEnriching ? "AI 充实中..." : "AI 深度充实内容"}
+          </button>
+
+          <div className="flex gap-3 bg-white p-1 rounded-xl shadow-sm border border-neutral-200">
           <button
             onClick={() => setIsJsonView(false)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
@@ -160,6 +345,7 @@ export function StickyOutlinePanel({ initialOutline, onOutlineChange }: StickyOu
           >
             <Copy size={16} /> JSON 源数据
           </button>
+          </div>
         </div>
       </div>
 
@@ -189,9 +375,30 @@ export function StickyOutlinePanel({ initialOutline, onOutlineChange }: StickyOu
                 <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider bg-white/40 px-2 py-1 rounded">
                   Slide {index + 1} · {slide.type}
                 </span>
-                <button className="opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-black transition-opacity">
-                  <PenSquare size={16} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {enrichProgress[index] && (
+                    <span className="text-[11px] font-semibold text-neutral-700 bg-white/60 px-2 py-1 rounded">
+                      {enrichProgress[index].status === "searching" && "⏳ 搜索中"}
+                      {enrichProgress[index].status === "enriching" && "⏳ 充实中"}
+                      {enrichProgress[index].status === "done" && "✅ 已完成"}
+                      {enrichProgress[index].status === "skipped" && "✅ 已跳过"}
+                    </span>
+                  )}
+                  {!["cover", "agenda", "ending"].includes(slide.type) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEnrichSingle(index);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-indigo-700 transition-opacity text-xs font-semibold bg-white/70 px-2 py-1 rounded"
+                    >
+                      {singleEnrichingIndex === index ? "充实中..." : "充实本页"}
+                    </button>
+                  )}
+                  <button className="opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-black transition-opacity">
+                    <PenSquare size={16} />
+                  </button>
+                </div>
               </div>
 
               <h3 className="font-bold text-lg text-neutral-900 leading-tight mb-3">

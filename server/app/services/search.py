@@ -8,6 +8,7 @@ from app.config import settings
 async def web_search(query: str, max_results: int = 5) -> str:
     """根据配置的搜索引擎获取背景信息摘要。"""
     engine = settings.search_engine.lower()
+    logger.info(f"🔍 搜索启动 | 引擎: {engine} | 关键词: {query[:80]} | 最大结果: {max_results}")
 
     try:
         if engine == "serper" and settings.serper_api_key:

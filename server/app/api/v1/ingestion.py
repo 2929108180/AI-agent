@@ -32,11 +32,15 @@ async def track_b(
     file: UploadFile = File(...),
     audience: str = Form("professional"),
     length: str = Form("standard"),
+    reference_text: str = Form(""),
+    custom_audience: str = Form(""),
+    custom_audience_note: str = Form(""),
 ):
-    """用户上传文档（PDF/Word/PPT），AI 化身阅读理解专家进行无损提炼。"""
+    """用户上传文档 + 可选补充文本，AI 化身阅读理解专家进行无损提炼。"""
     content = await file.read()
     return StreamingResponse(
-        run_track_b(content, file.filename, audience, length),
+        run_track_b(content, file.filename, audience, length, reference_text,
+                    custom_audience, custom_audience_note),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

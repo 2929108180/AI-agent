@@ -20,20 +20,36 @@ VISUAL_HINTS = {
 
 def _infer_visual_hint(title: str, content: list[str]) -> str:
     """根据页面标题和内容推断最佳视觉排版建议。"""
-    text = title + " ".join(content)
+    text = title + " " + " ".join(content)
 
-    if any(k in text for k in ["对比", "vs", "VS", "传统"]):
+    if any(k in text for k in ["对比", "vs", "VS", "传统", "优势", "差异"]):
         return "左右对比卡片排版，用色彩区分优劣势"
-    if any(k in text for k in ["流程", "步骤", "->", "→", "阶段"]):
+    if any(k in text for k in ["流程", "步骤", "->", "→", "阶段", "路径", "链路", "闭环", "全链"]):
         return "水平流程图，节点用圆形图标串联箭头"
-    if any(k in text for k in ["数据", "图表", "分布", "曲线", "TDS", "指标", "雷达图"]):
+    if any(k in text for k in ["数据", "图表", "分布", "曲线", "TDS", "指标", "雷达图", "效益", "降本", "增效", "ROI", "周转"]):
         return "数据可视化为主，大面积图表区 + 右侧关键数字卡片"
-    if any(k in text for k in ["三大", "三个", "3个", "突破"]):
+    if any(k in text for k in ["三大", "三个", "3个", "突破", "三段", "三合一", "三栏"]):
         return "三栏等宽 Bento 卡片，每栏一个核心突破点"
-    if any(k in text for k in ["案例", "展示", "产品", "界面"]):
+    if any(k in text for k in ["架构", "体系", "平台", "中台", "底座", "中心", "引擎"]):
+        return "中心辐射式架构图，核心模块居中，子系统环绕分布"
+    if any(k in text for k in ["案例", "展示", "产品", "界面", "截图", "示意"]):
         return "左图右文结构，左侧展示界面/产品图，右侧强调数据指标"
-    if any(k in text for k in ["痛点", "问题", "挑战"]):
+    if any(k in text for k in ["痛点", "问题", "挑战", "矛盾", "瓶颈"]):
         return "三个带图标的悬浮卡片，阶梯状排列，强调痛感"
+    if any(k in text for k in ["监控", "监管", "预警", "追溯", "溯源", "食安", "安全"]):
+        return "仪表盘式布局，中央大屏监控图 + 四周状态指标卡片"
+    if any(k in text for k in ["仓", "配送", "物流", "运力", "调度", "库存", "WMS", "TMS"]):
+        return "地图/路线式排版，中央物流网络图 + 底部关键指标条"
+    if any(k in text for k in ["目标", "建设", "规划", "愿景", "战略"]):
+        return "四宫格目标卡片，每格一个核心目标配图标"
+    if any(k in text for k in ["生态", "互联", "IoT", "App", "多端", "入口", "场景"]):
+        return "中心设备图 + 四周辐射连接的生态图谱"
+    if any(k in text for k in ["自定义", "参数", "极客", "高阶", "配置"]):
+        return "主次结合排版，中央大卡片展示核心参数面板，两侧小卡片展示细节"
+    if any(k in text for k in ["实施", "运维", "交付", "部署", "保障", "应急"]):
+        return "时间轴式排版，横向阶段节点 + 下方详情卡片"
+    if any(k in text for k in ["协同", "一体化", "业财", "结算", "对账"]):
+        return "连接式模块图，左侧业务模块 → 右侧财务模块，中间数据流箭头"
     if any(k in text for k in ["生态", "互联", "IoT", "App"]):
         return "中心设备图 + 四周辐射连接的生态图谱"
     if any(k in text for k in ["自定义", "参数", "极客", "高阶"]):

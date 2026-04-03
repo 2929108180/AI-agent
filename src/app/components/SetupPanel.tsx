@@ -12,22 +12,36 @@ import {
   SelectValue,
 } from "./ui/select";
 import { fetchSSE } from "../lib/sse";
-import type { SlideCard, GenerationPhase } from "../types";
+import type { SlideCard, GenerationPhase, SetupSession } from "../types";
 
 interface SetupPanelProps {
-  onComplete: (slides: SlideCard[]) => void;
+  onComplete: (slides: SlideCard[], session: SetupSession) => void;
 }
 
 export function SetupPanel({ onComplete }: SetupPanelProps) {
   const [hasReference, setHasReference] = useState<boolean>(false);
   const [topic, setTopic] = useState("");
   const [referenceText, setReferenceText] = useState("");
-  const [uploadedFile, setUploadedFile] = useState<{name: string, size: string} | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{name: string, size: string, file: File} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 受控状态
   const [audience, setAudience] = useState("professional");
   const [length, setLength] = useState("standard");
+  const [enableCustomAudience, setEnableCustomAudience] = useState(false);
+  const [customAudience, setCustomAudience] = useState("");
+  const [customAudienceNote, setCustomAudienceNote] = useState("");
+  const [isInterviewMode, setIsInterviewMode] = useState(false);
+  const [isLoadingInterview, setIsLoadingInterview] = useState(false);
+  const [interviewQuestions, setInterviewQuestions] = useState<Array<{
+    id: string;
+    question: string;
+    hint?: string;
+    type?: "text" | "select";
+    options?: string[];
+  }>>([]);
+  const [interviewContext, setInterviewContext] = useState("");
+  const [interviewAnswers, setInterviewAnswers] = useState<Record<string, string>>({});
 
   // 生成状态
   const [generationPhase, setGenerationPhase] = useState<GenerationPhase>("idle");
@@ -44,9 +58,9 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
       const file = e.target.files[0];
       setUploadedFile({
         name: file.name,
-        size: (file.size / 1024 / 1024).toFixed(2) + " MB"
+        size: (file.size / 1024 / 1024).toFixed(2) + " MB",
+        file: file,
       });
-      setReferenceText("");
     }
   };
 
@@ -63,6 +77,42 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
 
   const isGenerating = generationPhase !== "idle" && generationPhase !== "error" && generationPhase !== "complete";
 
+  const handleStartInterview = async () => {
+    if (!topic.trim() || isLoadingInterview || isGenerating) return;
+
+    setIsLoadingInterview(true);
+    setInterviewQuestions([]);
+    setInterviewAnswers({});
+    setInterviewContext("");
+
+    try {
+      await fetchSSE("/api/v1/outline/interview", { topic }, {
+        onStatus: (phase) => setGenerationPhase(phase as GenerationPhase),
+        onInterviewQuestions: ({ questions, context }) => {
+          setInterviewQuestions(questions || []);
+          setInterviewContext(context || "");
+          setIsInterviewMode(true);
+          setGenerationPhase("idle");
+          setIsLoadingInterview(false);
+        },
+        onError: (msg) => {
+          console.error("Interview error:", msg);
+          setGenerationPhase("error");
+          setIsLoadingInterview(false);
+        },
+        onDone: () => setIsLoadingInterview(false),
+      });
+    } catch (err) {
+      console.error("Interview fetch error:", err);
+      setGenerationPhase("error");
+      setIsLoadingInterview(false);
+    }
+  };
+
+  const updateInterviewAnswer = (id: string, value: string) => {
+    setInterviewAnswers((prev) => ({ ...prev, [id]: value }));
+  };
+
   const handleSubmit = async () => {
     const abort = new AbortController();
     abortRef.current = abort;
@@ -73,20 +123,39 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
       let url: string;
       let body: object | FormData;
 
-      if (hasReference && uploadedFile && fileInputRef.current?.files?.[0]) {
+      // 构建自定义受众字段
+      const customFields = enableCustomAudience
+        ? { custom_audience: customAudience, custom_audience_note: customAudienceNote }
+        : {};
+      const interviewAnswerText = interviewQuestions
+        .map((item) => {
+          const answer = interviewAnswers[item.id]?.trim();
+          return answer ? `${item.question}: ${answer}` : "";
+        })
+        .filter(Boolean)
+        .join("\n");
+      const trackATopic = interviewAnswerText
+        ? `${topic}\n\n[访谈补充信息]\n${interviewAnswerText}\n\n[背景调研摘要]\n${interviewContext}`
+        : topic;
+
+      if (hasReference && uploadedFile) {
         url = "/api/v1/ingestion/track-b";
         const formData = new FormData();
-        formData.append("file", fileInputRef.current.files[0]);
+        formData.append("file", uploadedFile.file);
         if (referenceText.trim()) formData.append("reference_text", referenceText);
         formData.append("audience", audience);
         formData.append("length", length);
+        if (enableCustomAudience && customAudience) {
+          formData.append("custom_audience", customAudience);
+          formData.append("custom_audience_note", customAudienceNote);
+        }
         body = formData;
       } else if (hasReference) {
         url = "/api/v1/ingestion/track-b/text";
-        body = { reference_text: referenceText, audience, length };
+        body = { reference_text: referenceText, audience, length, ...customFields };
       } else {
         url = "/api/v1/ingestion/track-a";
-        body = { topic, audience, length };
+        body = { topic: trackATopic, audience, length, ...customFields };
       }
 
       await fetchSSE(url, body, {
@@ -94,7 +163,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
         onToken: (content) => setStreamedText((prev) => prev + content),
         onOutline: (slides) => {
           setGenerationPhase("complete");
-          onComplete(slides);
+          onComplete(slides, buildSetupSession());
         },
         onError: (msg) => {
           setGenerationPhase("error");
@@ -144,6 +213,24 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
     }
   };
 
+  const buildSetupSession = (): SetupSession => ({
+    mode: hasReference ? "track-b" : "track-a",
+    topic,
+    referenceText,
+    audience,
+    length,
+    customAudience,
+    customAudienceNote,
+    interviewContext,
+    interviewAnswers: interviewQuestions
+      .map((item) => ({
+        question: item.question,
+        answer: interviewAnswers[item.id] || "",
+      }))
+      .filter((item) => item.answer.trim().length > 0),
+    sourceLabel: uploadedFile?.name || topic || "Untitled request",
+  });
+
   const handleUndoPolish = () => {
     if (polishHistory.length > 0) {
       const prevTopic = polishHistory[polishHistory.length - 1];
@@ -156,6 +243,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
   const phaseLabel: Record<string, string> = {
     searching: "正在搜索背景资料...",
     parsing: "正在解析文档...",
+    analyzing: "AI 正在分析最佳汇报对象...",
     generating: "AI 架构师正在构思大纲...",
   };
 
@@ -211,7 +299,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                 onClick={() => {
                   if (isGenerating) return;
                   setHasReference(false);
-                  if (audience === "auto") setAudience("professional");
+                  setIsInterviewMode(false);
                 }}
                 className={`group relative min-h-[188px] overflow-hidden rounded-[28px] border p-6 text-left transition-all duration-300 ${
                   !hasReference
@@ -232,6 +320,7 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                   if (isGenerating) return;
                   setHasReference(true);
                   setAudience("auto");
+                  setIsInterviewMode(false);
                 }}
                 className={`group relative min-h-[188px] overflow-hidden rounded-[28px] border p-6 text-left transition-all duration-300 ${
                   hasReference
@@ -264,6 +353,14 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                       <AlignLeft size={18} className="text-indigo-500" />
                       <h3 className="font-semibold text-neutral-800">一句话简述您的需求</h3>
                     </div>
+                    <button
+                      type="button"
+                      onClick={handleStartInterview}
+                      disabled={!topic.trim() || isLoadingInterview || isGenerating}
+                      className="rounded-full border border-indigo-100 bg-white px-4 py-2 text-xs font-semibold text-indigo-600 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {isLoadingInterview ? "访谈生成中..." : "进入访谈模式"}
+                    </button>
                   </div>
                   <textarea
                     value={topic}
@@ -272,6 +369,78 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                     placeholder="例如：我要做一场介绍全新 AI 智能咖啡机的产品发布会。受众是科技极客和咖啡爱好者。核心卖点是：豆种智能识别、微米级研磨、全息温控..."
                     className="min-h-[320px] flex-1 w-full resize-none bg-transparent px-6 py-7 text-base leading-8 text-neutral-700 outline-none placeholder-neutral-400 disabled:opacity-50 sm:px-8"
                   />
+                  <AnimatePresence initial={false}>
+                    {isInterviewMode && interviewQuestions.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="overflow-hidden border-t border-neutral-100 bg-indigo-50/40"
+                      >
+                        <div className="space-y-4 px-6 py-5 sm:px-8">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="text-sm font-semibold text-neutral-800">访谈问题</h4>
+                              <p className="mt-1 text-xs leading-6 text-neutral-500">
+                                回答这些问题后，会将答案作为上下文拼接进大纲生成。
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setIsInterviewMode(false)}
+                              className="rounded-lg p-1 text-neutral-400 transition-colors hover:bg-white hover:text-neutral-700"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+
+                          <div className="space-y-3">
+                            {interviewQuestions.map((item, index) => (
+                              <div key={item.id} className="rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
+                                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-400">
+                                  Q{index + 1}
+                                </div>
+                                <div className="text-sm font-medium leading-6 text-neutral-800">{item.question}</div>
+                                {item.hint && (
+                                  <div className="mt-1 text-xs leading-5 text-neutral-500">{item.hint}</div>
+                                )}
+
+                                {item.type === "select" && item.options?.length ? (
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    {item.options.map((option) => {
+                                      const active = interviewAnswers[item.id] === option;
+                                      return (
+                                        <button
+                                          key={option}
+                                          type="button"
+                                          onClick={() => updateInterviewAnswer(item.id, option)}
+                                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                                            active
+                                              ? "border-indigo-500 bg-indigo-600 text-white"
+                                              : "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
+                                          }`}
+                                        >
+                                          {option}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <textarea
+                                    value={interviewAnswers[item.id] || ""}
+                                    onChange={(e) => updateInterviewAnswer(item.id, e.target.value)}
+                                    placeholder="输入你的回答..."
+                                    className="mt-3 min-h-[84px] w-full resize-none rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 text-sm leading-6 text-neutral-700 outline-none transition-colors placeholder:text-neutral-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <div className="flex min-h-[72px] items-center justify-between border-t border-neutral-100 bg-neutral-50 px-4 py-3 sm:px-6">
                     {/* Undo Button */}
                     <AnimatePresence>
@@ -475,17 +644,82 @@ export function SetupPanel({ onComplete }: SetupPanelProps) {
                     <SelectValue placeholder="请选择汇报对象" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-neutral-200 bg-white p-1 shadow-xl">
-                    {hasReference && (
                       <SelectItem value="auto" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">
                         <div className="flex items-center gap-2 font-semibold text-indigo-600"><Sparkles size={14}/> 智能匹配 (根据内容推断)</div>
                       </SelectItem>
-                    )}
                     <SelectItem value="professional" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">专业同行 / 专家 (严谨深究)</SelectItem>
                     <SelectItem value="investor" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">投资人 / 高管 (ROI导向)</SelectItem>
                     <SelectItem value="consumer" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">大众消费者 (情绪共鸣)</SelectItem>
                     <SelectItem value="internal" className="cursor-pointer rounded-lg hover:bg-neutral-50 focus:bg-indigo-50 focus:text-indigo-700">内部员工 / 培训 (清晰结构)</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <div className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4">
+                  <button
+                    type="button"
+                    onClick={() => setEnableCustomAudience((prev) => !prev)}
+                    className="flex w-full items-start justify-between gap-3 text-left"
+                  >
+                    <div>
+                      <div className="text-sm font-semibold text-neutral-800">自定义汇报对象</div>
+                      <p className="mt-1 text-xs leading-6 text-neutral-500">
+                        当预设选项无法准确描述场景时，可额外补充汇报对象与说明，方便后续 AI 理解上下文。
+                      </p>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <div className={`relative h-6 w-11 rounded-full transition-colors ${
+                        enableCustomAudience ? "bg-indigo-600" : "bg-neutral-300"
+                      }`}>
+                        <div
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                            enableCustomAudience ? "translate-x-5" : "translate-x-0.5"
+                          }`}
+                        />
+                      </div>
+                      <span className={`text-xs font-semibold transition-colors ${
+                        enableCustomAudience ? "text-indigo-600" : "text-neutral-500"
+                      }`}>
+                        {enableCustomAudience ? "已开启" : "未开启"}
+                      </span>
+                    </div>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {enableCustomAudience && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, y: -6 }}
+                        animate={{ opacity: 1, height: "auto", y: 0 }}
+                        exit={{ opacity: 0, height: 0, y: -6 }}
+                        transition={{ duration: 0.18 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-4 space-y-3 border-t border-neutral-200 pt-4">
+                          <div>
+                            <label className="mb-2 block text-xs font-medium text-neutral-600">汇报对象名称</label>
+                            <input
+                              value={customAudience}
+                              onChange={(e) => setCustomAudience(e.target.value)}
+                              placeholder="例如：区域销售负责人 / 医院管理层 / 投资评审委员会"
+                              className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm text-neutral-700 outline-none transition-colors placeholder:text-neutral-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-xs font-medium text-neutral-600">补充说明</label>
+                            <textarea
+                              value={customAudienceNote}
+                              onChange={(e) => setCustomAudienceNote(e.target.value)}
+                              placeholder="补充该类人群关注的重点、期望语气、行业背景，或他们最在意的内容。"
+                              className="min-h-[112px] w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-3 text-sm leading-6 text-neutral-700 outline-none transition-colors placeholder:text-neutral-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+                            />
+                          </div>
+                          <p className="text-[11px] leading-5 text-neutral-400">
+                            当前仅为 UI 预留，后续可以接入 Prompt 或生成链路。
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
 
               <div>

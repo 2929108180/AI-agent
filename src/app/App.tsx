@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./components/ui/dropdown-menu";
-import type { SlideCard } from "./types";
+import type { SlideCard, SetupSession } from "./types";
 
 type Step = 1 | 2 | 3;
 
@@ -19,6 +19,8 @@ export default function App() {
   const [hasStarted, setHasStarted] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [outline, setOutline] = useState<SlideCard[]>([]);
+  const [setupSession, setSetupSession] = useState<SetupSession | null>(null);
+  const [enrichedIndices, setEnrichedIndices] = useState<number[]>([]);
 
   if (!hasStarted) {
     return <LandingPage onStart={() => setHasStarted(true)} />;
@@ -30,8 +32,10 @@ export default function App() {
     { id: 3, name: "高保真生成与微调", icon: <MonitorPlay size={18} /> },
   ];
 
-  const handleSetupComplete = (slides: SlideCard[]) => {
+  const handleSetupComplete = (slides: SlideCard[], session: SetupSession) => {
     setOutline(slides);
+    setSetupSession(session);
+    setEnrichedIndices([]);
     setCurrentStep(2);
   };
 
@@ -173,9 +177,21 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 overflow-hidden relative">
         <div className="absolute inset-0 overflow-y-auto">
-          {currentStep === 1 && <SetupPanel onComplete={handleSetupComplete} />}
-          {currentStep === 2 && <StickyOutlinePanel initialOutline={outline} onOutlineChange={setOutline} />}
-          {currentStep === 3 && <WorkspaceEditor />}
+          <div className={currentStep === 1 ? "block" : "hidden"}>
+            <SetupPanel onComplete={handleSetupComplete} />
+          </div>
+          <div className={currentStep === 2 ? "block" : "hidden"}>
+            <StickyOutlinePanel
+              initialOutline={outline}
+              onOutlineChange={setOutline}
+              setupSession={setupSession}
+              enrichedIndices={enrichedIndices}
+              onEnrichedIndicesChange={setEnrichedIndices}
+            />
+          </div>
+          <div className={currentStep === 3 ? "block h-full" : "hidden h-full"}>
+            <WorkspaceEditor outline={outline} isActive={currentStep === 3} skipEnrichIndices={enrichedIndices} />
+          </div>
         </div>
       </main>
     </div>
